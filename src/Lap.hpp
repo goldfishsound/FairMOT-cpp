@@ -1,12 +1,39 @@
-#ifndef SRC_LAP_HPP_
-#define SRC_LAP_HPP_
 
-#include <immintrin.h>
 
 #include <cassert>
 #include <cstdio>
 #include <limits>
 #include <memory>
+#include <tuple>
+#include "Cpuid.hpp"
+
+#ifndef SRC_LAP_HPP_
+#define SRC_LAP_HPP_
+#endif
+
+
+
+#if !defined(__arm64__) && !defined(_M_ARM64)
+#ifndef SIMD_ARCH_86X64
+#define SIMD_ARCH_86X64
+#endif
+#include <immintrin.h> // Include AVX2 intrinsics for non-ARM64 architectures
+#elif defined(__APPLE__)
+#include <TargetConditionals.h>
+#if TARGET_OS_MAC || TARGET_OS_IOS
+#ifndef SIMD_ARCH_OS_MAC_ARM64
+#define SIMD_ARCH_OS_MAC_ARM64
+#endif
+#include <Accelerate/Accelerate.h> // Include Accelerate framework for macOS
+#else
+//TODO: Decide if Neon should be used at all.
+#include <arm_neon.h> // Include Neon intrinsics for other Apple platforms (e.g., iOS)
+#endif
+#else
+#include <arm_neon.h> // Include Neon intrinsics for non-Apple ARM64 platforms
+#endif
+
+
 
 #ifdef __GNUC__
 #define always_inline __attribute__((always_inline)) inline
@@ -19,6 +46,8 @@
 #define restrict
 #endif
 
+
+// Using CPU
 template <typename idx, typename cost>
 always_inline std::tuple<cost, cost, idx, idx> find_umins_regular(
     idx dim, idx i, const cost *restrict assign_cost, const cost *restrict v) {
@@ -48,6 +77,8 @@ always_inline std::tuple<cost, cost, idx, idx> find_umins_regular(
 #define FLOAT_MIN_DIM 64
 #define DOUBLE_MIN_DIM 100000  // 64-bit code is actually always slower
 
+#ifdef SIMD_ARCH_86X64
+// Using AVX2
 template <typename idx>
 always_inline std::tuple<float, float, idx, idx> find_umins_avx2(
     idx dim, idx i, const float *restrict assign_cost,
@@ -197,15 +228,183 @@ always_inline std::tuple<double, double, idx, idx> find_umins_avx2(
     }
     return std::make_tuple(umin, usubmin, j1, j2);
 }
+#endif // simd_flags.hasAVX2
 
+#ifdef SIMD_ARCH_OS_MAC_ARM64
+
+// Using Accelerate
+template <typename idx>
+always_inline std::tuple<float, float, idx, idx> find_umins_accelerate(
+    idx dim, idx i, const float *restrict assign_cost,
+    const float *restrict v) {
+    if (dim < FLOAT_MIN_DIM) {
+        return find_umins_regular(dim, i, assign_cost, v);
+    }
+    const float *local_cost = assign_cost + i * dim;
+
+    // Initialize variables
+    float umin = std::numeric_limits<float>::max();
+    float usubmin = std::numeric_limits<float>::max();
+    idx j1 = -1;
+    idx j2 = -1;
+
+    // Process vectors in batches of 4 elements using Accelerate framework
+    vDSP_Length numElements = dim - 3;
+    vDSP_Stride stride = 1;
+    float *h = new float[numElements];
+    vDSP_vsub(local_cost, stride, v, stride, h, stride, numElements);
+    vDSP_vclip(h, stride, &umin, &usubmin, h, stride, numElements);
+
+    // Find indices and values of umin and usubmin
+    vDSP_Length uminIndex, usubminIndex;
+    vDSP_minvi(h, stride, &umin, &uminIndex, numElements);
+    usubmin = umin;
+    vDSP_minvi(h, stride, &usubmin, &usubminIndex, numElements);
+
+    // Update j1 and j2
+    j1 = static_cast<idx>(uminIndex);
+    j2 = static_cast<idx>(usubminIndex);
+
+    // Clean up memory
+    delete[] h;
+
+    // Process remaining elements sequentially
+    for (idx j = dim & 0xFFFFFFFCu; j < dim; j++) {
+        float h1 = local_cost[j] - v[j];
+        if (h1 < usubmin) {
+            if (h1 >= umin) {
+                usubmin = h1;
+                j2 = j;
+            } else {
+                usubmin = umin;
+                umin = h1;
+                j2 = j1;
+                j1 = j;
+            }
+        }
+    }
+
+    return std::make_tuple(umin, usubmin, j1, j2);
+}
+
+#endif // SIMD_ARCH_OS_MAC_ARM64
+
+
+#ifdef SIMD_ARCH_NEON
+// Using Neon
+template <typename idx>
+always_inline std::tuple<double, double, idx, idx> find_umins_neon(
+    idx dim, idx i, const double *restrict assign_cost,
+    const double *restrict v) {
+    if (dim < DOUBLE_MIN_DIM) {
+        return find_umins_regular(dim, i, assign_cost, v);
+    }
+    const double *local_cost = assign_cost + i * dim;
+    int64x2_t idxvec_low = {3, 2}; // Reverse order: 3, 2
+    int64x2_t idxvec_high = {1, 0}; // Reverse order: 1, 0
+    double umin = std::numeric_limits<double>::max();
+    double usubmin = std::numeric_limits<double>::max();
+    idx j1 = -1;
+    idx j2 = -1;
+
+    // Vectorized processing using Neon intrinsics
+    for (idx j = 0; j < dim - 3; j += 4) {
+        float64x2_t acvec_low = vld1q_f64(local_cost + j);
+        float64x2_t acvec_high = vld1q_f64(local_cost + j + 2);
+        float64x2_t vvec_low = vld1q_f64(v + j);
+        float64x2_t vvec_high = vld1q_f64(v + j + 2);
+
+        float64x2_t h_low = vsubq_f64(acvec_low, vvec_low);
+        float64x2_t h_high = vsubq_f64(acvec_high, vvec_high);
+
+        float64x2_t uminvec_low = vdupq_n_f64(umin);
+        float64x2_t uminvec_high = vdupq_n_f64(umin);
+
+        float64x2_t usubminvec_low = vdupq_n_f64(usubmin);
+        float64x2_t usubminvec_high = vdupq_n_f64(usubmin);
+
+        // Compare h with uminvec
+        uint64x2_t cmp_low = vcleq_f64(h_low, uminvec_low);
+        uint64x2_t cmp_high = vcleq_f64(h_high, uminvec_high);
+
+        // Update usubminvec and j2vec based on the comparison
+        usubminvec_low = vbslq_f64(cmp_low, usubminvec_low, uminvec_low);
+        usubminvec_high = vbslq_f64(cmp_high, usubminvec_high, uminvec_high);
+
+        float64x2_t j2vec_low = vreinterpretq_f64_s64(vld1q_s64(reinterpret_cast<const int64_t*>(j1)));
+        float64x2_t j2vec_high = vreinterpretq_f64_s64(vld1q_s64(reinterpret_cast<const int64_t*>(j1 + 2)));
+
+        j2vec_low = vbslq_f64(cmp_low, j2vec_low, vdupq_n_f64(-1));
+        j2vec_high = vbslq_f64(cmp_high, j2vec_high, vdupq_n_f64(-1));
+
+        uminvec_low = vbslq_f64(cmp_low, h_low, uminvec_low);
+        uminvec_high = vbslq_f64(cmp_high, h_high, uminvec_high);
+
+        // Update j1vec based on the comparison
+        float64x2_t j1vec_low = vdupq_n_f64(static_cast<double>(j));
+        float64x2_t j1vec_high = vdupq_n_f64(static_cast<double>(j + 2));
+
+        j1vec_low = vbslq_f64(cmp_low, j1vec_low, vdupq_n_f64(-1));
+        j1vec_high = vbslq_f64(cmp_high, j1vec_high, vdupq_n_f64(-1));
+
+        // Invert cmp to find values smaller than umin
+        cmp_low = vmvnq_u64(cmp_low);
+        cmp_high = vmvnq_u64(cmp_high);
+
+        // Update usubminvec and j2vec based on the inverted comparison
+        usubminvec_low = vbslq_f64(cmp_low, h_low, usubminvec_low);
+        usubminvec_high = vbslq_f64(cmp_high, h_high, usubminvec_high);
+
+        j2vec_low = vbslq_f64(cmp_low, vdupq_n_f64(static_cast<double>(j)), j2vec_low);
+        j2vec_high = vbslq_f64(cmp_high, vdupq_n_f64(static_cast<double>(j + 2)), j2vec_high);
+
+        // Store the results back to memory
+        vst1q_f64(local_cost + j, h_low);
+        vst1q_f64(local_cost + j + 2, h_high);
+
+        vst1q_s64(reinterpret_cast<int64_t*>(j1), vreinterpretq_s64_f64(j1vec_low));
+        vst1q_s64(reinterpret_cast<int64_t*>(j1 + 2), vreinterpretq_s64_f64(j1vec_high));
+    }
+
+    // Sequential processing for the remaining elements
+    for (idx j = dim & 0xFFFFFFFCu; j < dim; j++) {
+        double h = local_cost[j] - v[j];
+        if (h < usubmin) {
+            if (h >= umin) {
+                usubmin = h;
+                j2 = j;
+            } else {
+                usubmin = umin;
+                umin = h;
+                j2 = j1;
+                j1 = j;
+            }
+        }
+    }
+
+    return std::make_tuple(umin, usubmin, j1, j2);
+}
+#endif //SIMD_ARCH_NEON
+
+
+// Select finc_umins function based on supported archecture.
+// TODO: Change avx2 bool flag to an enum type called simdType and test for values: .none, .avx2, .neon
 template <bool avx2, typename idx, typename cost>
 always_inline std::tuple<cost, cost, idx, idx> find_umins(
     idx dim, idx i, const cost *restrict assign_cost, const cost *restrict v) {
-    if constexpr (avx2) {
-        return find_umins_avx2(dim, i, assign_cost, v);
-    } else {
-        return find_umins_regular(dim, i, assign_cost, v);
-    }
+    
+#ifdef SIMD_ARCH_86x64
+    return find_umins_avx2(dim, i, assign_cost, v);
+#endif
+#ifdef SIMD_ARCH_NEON
+    return find_umins_neon(dim, i, assign_cost, v);
+#endif
+#ifdef SIMD_ARCH_OS_MAC_ARM64
+    return find_umins_accelerate(dim, i, assign_cost, v);
+#else
+    return find_umins_regular(dim, i, assign_cost, v);
+#endif
+
 }
 
 /// @brief Exact Jonker-Volgenant algorithm.
@@ -483,4 +682,4 @@ cost lap(int dim, const cost *restrict assign_cost, bool verbose,
 
     return lapcost;
 }
-#endif  // SRC_LAP_HPP_
+//#endif  // SRC_LAP_HPP_
