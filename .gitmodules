@@ -1,6 +1,3 @@
-[submodule "python/pytorch-dcnv2"]
-	path = python/pytorch-dcnv2
-	url = https://github.com/liyier90/pytorch-dcnv2.git
 [submodule "python/FairMOT"]
 	path = python/FairMOT
 	url = https://github.com/ifzhang/FairMOT.git
