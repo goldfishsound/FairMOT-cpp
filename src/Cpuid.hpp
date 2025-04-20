@@ -1,13 +1,36 @@
 #ifndef SRC_CPUID_HPP_
 #define SRC_CPUID_HPP_
 
+#define neonFound  false
+
+#define accelerateFound false
+
+#include <stdint.h>
+
 #ifdef _MSC_VER
 #include <intrin.h>
 #define CPUID(info, x) __cpuidex(reinterpret_cast<int *>(info), x, 0)
-#else
+#elif defined(__x86_64__) || defined(_M_X64)
 #include <cpuid.h>
 #define CPUID(info, x) __cpuid_count(x, 0, info[0], info[1], info[2], info[3])
+
+#elif defined(__arm64__) && defined(_M_ARM64)
+#define neonFound  true
+
+void __cpuid_count_appleArm64(uint32_t leaf, uint32_t *info);
+
+#define CPUID(info, x) __cpuid_count_appleArm64(x, info)
+
+#elif defined(__arm64__) && defined(__APPLE__)
+#define accelerateFound true
+#define CPUID(info, x) __cpuid_count_appleArm64(x, info)
+void __cpuid_count_appleArm64(unsigned int leaf, unsigned int info[]){
+    info[0] = info[1] = info[2] = info[3] = 0;
+    unsigned int _leaf = leaf; // Unused.
+}
 #endif
+
+
 
 class SIMDFlags final {
    public:
@@ -15,9 +38,11 @@ class SIMDFlags final {
     SIMDFlags(const SIMDFlags &) = delete;
     SIMDFlags &operator=(const SIMDFlags &) = delete;
 
+    // An object that gathers information about the CPU's capabilities for vector processing.
     SIMDFlags() {
         unsigned int cpuInfo[4];
         // CPUID: https://en.wikipedia.org/wiki/CPUID
+
         CPUID(cpuInfo, 0x00000001);
         simd_flags_ |= cpuInfo[3] & (1 << 25) ? SIMD_SSE : SIMD_NONE;
         simd_flags_ |= cpuInfo[3] & (1 << 26) ? SIMD_SSE2 : SIMD_NONE;
@@ -35,6 +60,8 @@ class SIMDFlags final {
         CPUID(cpuInfo, 0x80000001);
         simd_flags_ |= cpuInfo[2] & (1 << 16) ? SIMD_FMA4 : SIMD_NONE;
     }
+    
+
 
     inline bool hasSSE() const { return simd_flags_ & SIMD_SSE; }
     inline bool hasSSE2() const { return simd_flags_ & SIMD_SSE2; }
@@ -47,6 +74,10 @@ class SIMDFlags final {
     inline bool hasAVX() const { return simd_flags_ & SIMD_AVX; }
     inline bool hasAVX2() const { return simd_flags_ & SIMD_AVX2; }
     inline bool hasAVX512() const { return simd_flags_ & SIMD_AVX512; }
+    inline bool hasNeon() const { return neonFound;}
+    inline bool hasAccelerate() const { return accelerateFound;}
+
+
 
    private:
     enum simd_t {
