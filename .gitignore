@@ -166,3 +166,5 @@ results/
 .DS_Store
 .vscode/
 /python/versioncheck.py
+/python/FairMOT
+FairMOT.entitlements
