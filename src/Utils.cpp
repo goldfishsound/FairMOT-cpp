@@ -15,11 +15,19 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
-
 #include "Cpuid.hpp"
+
+
 #include "DataType.hpp"
 #include "Lap.hpp"
 #include "STrack.hpp"
+
+enum SIMDArch {
+  none,
+  AVX2,
+  Neon,
+  Accelerate
+};
 
 static SIMDFlags simd_flags;
 
@@ -115,6 +123,9 @@ float Lap(const std::vector<float> &rCost, const int numRows, const int numCols,
 
   ArrayR<int, 1, -1> p_x_c(n);
   ArrayR<int, 1, -1> p_y_c(n);
+
+  // Selects the template version of lap depending on wether the CPU supports AVX2 or not.
+
 
   auto opt = simd_flags.hasAVX2()
                  ? lap<true, int, float>(n, cost_f.data(), /*verbose=*/false,
