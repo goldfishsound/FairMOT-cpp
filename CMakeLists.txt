@@ -24,7 +24,7 @@ find_package(OpenCV REQUIRED
     PATHS ./third_party/opencv4
     NO_DEFAULT_PATH
 )
-set(CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/third_party/libtorch/share/cmake")
+set(CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/third_party/torch/share/cmake")
 find_package(Torch REQUIRED)
 
 find_package(Python3 COMPONENTS Development)
