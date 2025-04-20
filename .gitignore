@@ -163,8 +163,8 @@ dmypy.json
 
 videos/
 results/
-.DS_Store
+**/.DS_Store
 .vscode/
 /python/versioncheck.py
-/python/FairMOT
+python/FairMOT/
 FairMOT.entitlements
