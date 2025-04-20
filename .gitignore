@@ -163,3 +163,6 @@ dmypy.json
 
 videos/
 results/
+.DS_Store
+.vscode/
+/python/versioncheck.py
