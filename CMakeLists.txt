@@ -6,11 +6,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
 # set(extra_lib_for_filesystem "stdc++fs") # libc++ replaces stdc++fs
 
-# Apple Silicon specific flags
-# if(APPLE)
-#     set(CMAKE_OSX_ARCHITECTURES arm64)
-# endif()
-# set(CMAKE_OSX_ARCHITECTURES x86_64;arm64)
+#Apple Silicon specific flags
+if(APPLE)
+    message(STATUS "Apple detected")
+    set(CMAKE_OSX_ARCHITECTURES arm64)
+    set(CMAKE_OSX_SYSROOT $(xcrun --sdk macosx --show-sdk-path))
+endif()
 
 # Creates compile_commands.json file in build folder.
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
