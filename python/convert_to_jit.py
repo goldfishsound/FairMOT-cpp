@@ -34,8 +34,16 @@ def main():
     converted_weights_path = weights_dir / "fairmot_dla34_jit.pth"
     scripted_model_path = weights_dir / "scripted_fairmot_dla34_jit.pth"
     
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    # device = torch.device("mps")
+    if torch.backends.mps.is_available():
+        device = torch.device("mps")        
+        print("Using MPS")
+    elif torch.cuda.is_available():
+        device = torch.device("cuda:0")
+        print("Using CUDA")
+    else:
+        device = torch.device("cpu")
+        print("Using CPU")
+    
 
     model = DLASegCustom(
         "dla34",
