@@ -38,6 +38,15 @@ mFrameId{0},
 mLostStracks(),
 mTrackedStracks(),
 mRemoveStracks() {
+    // Set JIT flags.
+    FLAGS_torch_jit_enable_new_executor = false;
+    // Removed in LibTorch 2.0
+    // torch::jit::getProfilingMode() = false;   
+    // torch::jit::getExecutorMode() = false;
+    torch::jit::FusionStrategy fusion_strategy = {
+        {torch::jit::FusionBehavior::DYNAMIC, 1}};
+    torch::jit::setFusionStrategy(fusion_strategy);
+
     try {
         // Load the serialized model
         mModel = torch::jit::load(rModelPath);
@@ -57,12 +66,7 @@ mRemoveStracks() {
     } catch (...) {
         std::cerr << "Unknown Error" << std::endl;
     }
-    FLAGS_torch_jit_enable_new_executor = false;
-    torch::jit::getProfilingMode() = false;   
-    torch::jit::getExecutorMode() = false;
-    torch::jit::FusionStrategy fusion_strategy = {
-        {torch::jit::FusionBehavior::DYNAMIC, 1}};
-    torch::jit::setFusionStrategy(fusion_strategy);
+   
     
     //TODO: Implement check for MPS device type.
     torch::DeviceType device_type;
@@ -70,10 +74,10 @@ mRemoveStracks() {
         std::cout << "Using CUDA." << std::endl;
         device_type = torch::kCUDA;
     } 
-    //  else if (torch::mps::is_available()){
-    //      std::cout << "Using MPS." << std::endl;
-    //      device_type = torch::kMPS;
-    //  }
+     else if (torch::mps::is_available()){
+         std::cout << "Using MPS." << std::endl;
+         device_type = torch::kMPS;
+     }
     else {
         std::cout << "Using CPU." << std::endl;
         device_type = torch::kCPU;
