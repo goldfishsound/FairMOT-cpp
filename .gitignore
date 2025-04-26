@@ -168,3 +168,4 @@ results/
 /python/versioncheck.py
 python/FairMOT/
 FairMOT.entitlements
+results*
