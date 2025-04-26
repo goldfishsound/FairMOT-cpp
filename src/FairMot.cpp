@@ -67,8 +67,7 @@ mRemoveStracks() {
         std::cerr << "Unknown Error" << std::endl;
     }
    
-    
-    //TODO: Implement check for MPS device type.
+    // Get available device
     torch::DeviceType device_type;
     if (torch::cuda::is_available()) {
         std::cout << "Using CUDA." << std::endl;
@@ -86,7 +85,6 @@ mRemoveStracks() {
     std::cout << "LibTorch version: " << TORCH_VERSION_MAJOR << "."
     << TORCH_VERSION_MINOR << "."
     << TORCH_VERSION_PATCH << std::endl;
-    
     
     
     mpDevice = new torch::Device(device_type);
