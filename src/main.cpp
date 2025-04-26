@@ -14,6 +14,7 @@
 // Path to the model file
 std::string model_path = "../weights/fairmot_dla34_jit.pth";
 
+// Declare path to the results directory
 fs::path results_dir;
 
 // Initialize the FairMot tracker
@@ -24,11 +25,6 @@ fairmot::FairMot tracker(model_path, /*frameRate=*/25.0,
 // Declare the function to process video                         
 int ProcessVideo(const fs::path &rVideoPath);
 
-//extern "C" void __dummy_function_from_torchvision() {
-//    // Reference some symbol from torchvision
-//    (void)torchvision::ops::nms;
-//}
-
 int main(int argc, char *argv[]) {
     if (argc < 2) {
         std::cerr << "Missing input video file!" << std::endl;
@@ -38,12 +34,6 @@ int main(int argc, char *argv[]) {
     
     std::filesystem::path currentDir = std::filesystem::current_path();
     std::cout << "Current directory: " << currentDir << std::endl;
-    
-    // std::ifstream input_file(argv[1], std::ios::in);
-    // if (!input_file.is_open()) {
-    //     std::cerr << "Could not open input file: " << argv[1] << std::endl;
-    //     return EXIT_FAILURE;
-    // }
     
     std::vector<fs::path> video_files;
     auto input_path = fs::canonical(fs::path(argv[1]));
@@ -81,6 +71,7 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
+    // Process each video file
     for (const auto &video_path : video_files) {
         std::cout << "Processing video: " << video_path << std::endl;
         if (ProcessVideo(video_path) != EXIT_SUCCESS) {
@@ -93,12 +84,17 @@ int main(int argc, char *argv[]) {
 }
 
 int ProcessVideo(const fs::path &rVideoPath) {
+    // Create output directory
     auto output_dir = results_dir / rVideoPath.stem().string();
     std::cout << "Creating output dir: " << output_dir << std::endl;
     fs::create_directory(output_dir);
+
+    // Create subdirectories for images
     auto image_dir = output_dir / "images";
     std::cout << "Creating frames dir: " << image_dir << std::endl;
     fs::create_directory(image_dir);
+
+    // Create subdirectory for video
     auto video_dir = output_dir / "video";
     std::cout << "Creating video dir: " << video_dir << std::endl;
     fs::create_directory(video_dir);
@@ -122,8 +118,11 @@ int ProcessVideo(const fs::path &rVideoPath) {
         const auto results = tracker.Track(image);
         auto end_time = std::chrono::high_resolution_clock::now();
         
+        // Create file name for output image
         std::stringstream outfile_name;
         outfile_name << std::setfill('0') << std::setw(5) << num_frames << ".jpg";
+
+        // Save the image with bounding boxes
         fairmot::util::Visualize(image, results, num_frames);
         cv::imwrite((image_dir / outfile_name.str()).native(), image);
         
@@ -137,6 +136,8 @@ int ProcessVideo(const fs::path &rVideoPath) {
 
     }
     cap.release();
+
+    // Create a video from the images
     std::stringstream cmd_stream;
     cmd_stream << "ffmpeg -y -f image2 -i " << image_dir / "%05d.jpg"
     << " -c:v copy " << video_dir / "results.mp4";
