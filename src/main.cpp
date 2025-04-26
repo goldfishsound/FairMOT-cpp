@@ -38,12 +38,12 @@ int main(int argc, char *argv[]) {
 }
 
 int ProcessVideo(const fs::path &rVideoPath) {
-    std::string model_path = "../../weights/fairmot_dla34_jit.pth";
+    std::string model_path = "../weights/fairmot_dla34_jit.pth";
     fairmot::FairMot tracker(model_path, /*frameRate=*/25.0,
-                             /*maxPerImage=*/500,
+                             /*maxPerImage=*/50,
                              /*trackBuffer=*/120);
     
-    auto output_dir = rVideoPath.parent_path().parent_path() / "results";
+    auto output_dir = rVideoPath.parent_path().parent_path() / "results2";
     std::cout << "Creating output dir: " << output_dir << std::endl;
     fs::create_directory(output_dir);
     
@@ -78,10 +78,7 @@ int ProcessVideo(const fs::path &rVideoPath) {
             std::cout << static_cast<double>(num_frames) / total_elapsed.count()
             << " fps" << std::endl;
         }
-        
-        // if (cv::waitKey(1) > 0) {
-        //   break;
-        // }
+
     }
     cap.release();
     std::stringstream cmd_stream;
