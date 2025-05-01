@@ -134,6 +134,52 @@ set(SOURCES
     src/Cpuid.hpp
 )
 
+# ================================================
+# Static library for FairMotAPI
+# ================================================
+
+set(API_SOURCES
+    src/FairMotAPI.cpp
+)
+
+add_library(fairmot STATIC ${API_SOURCES})
+
+target_include_directories(fairmot PUBLIC
+    ${PROJECT_SOURCE_DIR}/src
+)
+
+target_include_directories(fairmot
+    PUBLIC
+        ${PROJECT_SOURCE_DIR}/src
+        ${TORCH_INCLUDE_DIRS}
+        ${VISION_INCLUDE_DIRS}
+        ${OpenCV_INCLUDE_DIRS}
+        ${Python3_INCLUDE_DIRS}
+)
+
+target_link_libraries(fairmot
+    Eigen3::Eigen
+    ${OpenCV_LIBRARIES}
+    ${Python3_LIBRARIES}
+    ${TORCH_LIBRARIES}
+    ${VISION_LIBRARY}
+)
+
+# Platform-specific linking for the static library (if needed)
+if(APPLE)
+    target_link_libraries(fairmot
+        ${CXX_LIB}
+        ${OMP_LIBRARY}
+        ${ACCELERATE_FRAMEWORK}
+    )
+else()
+    target_link_libraries(fairmot
+        libc++
+    )
+endif()
+
+
+
 if(FairMOT_EVAL)
     list(APPEND SOURCES src/main_eval.cpp)
 else()
@@ -177,5 +223,25 @@ else()
     libc++)
 endif()
 
+
+
 # Set again for clarity
 set_property(TARGET FairMOT PROPERTY CXX_STANDARD 17)
+
+
+# Set output directories for executables and libraries
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)    # static libs (.a)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)    # shared libs (.dylib / .so)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)    # executables
+
+# Install headers (optional, but useful for consumers)
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/src/ DESTINATION include
+        FILES_MATCHING PATTERN "*.hpp")
+
+# Install library
+install(TARGETS fairmot
+        ARCHIVE DESTINATION lib)
+
+# Install executable (if desired)
+install(TARGETS FairMOT
+        RUNTIME DESTINATION bin)
