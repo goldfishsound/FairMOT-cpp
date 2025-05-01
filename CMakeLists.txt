@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 project(FairMOT)
 
+set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}")
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -10,6 +12,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
 # Apple Silicon specific flags
 if(APPLE)
     message(STATUS "Apple detected")
+    set(ACCELERATE_FRAMEWORK "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/Accelerate.framework/Accelerate.tbd")
     # Check if the architecture is arm64 (Apple Silicon)
     if(CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
         message(STATUS "Apple Silicon detected")
@@ -135,29 +138,24 @@ set(SOURCES
 )
 
 # ================================================
-# Static library for FairMotAPI
+# Static library for fairmotlib
 # ================================================
 
 set(API_SOURCES
-    src/FairMotAPI.cpp
+    src/api/FairMotAPI.cpp
 )
 
-add_library(fairmot STATIC ${API_SOURCES})
+add_library(fairmotlib STATIC ${API_SOURCES})
 
-target_include_directories(fairmot PUBLIC
+target_include_directories(fairmotlib PUBLIC
     ${PROJECT_SOURCE_DIR}/src
+    ${TORCH_INCLUDE_DIRS}
+    ${VISION_INCLUDE_DIRS}
+    ${OpenCV_INCLUDE_DIRS}
+    ${Python3_INCLUDE_DIRS}
 )
 
-target_include_directories(fairmot
-    PUBLIC
-        ${PROJECT_SOURCE_DIR}/src
-        ${TORCH_INCLUDE_DIRS}
-        ${VISION_INCLUDE_DIRS}
-        ${OpenCV_INCLUDE_DIRS}
-        ${Python3_INCLUDE_DIRS}
-)
-
-target_link_libraries(fairmot
+target_link_libraries(fairmotlib
     Eigen3::Eigen
     ${OpenCV_LIBRARIES}
     ${Python3_LIBRARIES}
@@ -167,13 +165,13 @@ target_link_libraries(fairmot
 
 # Platform-specific linking for the static library (if needed)
 if(APPLE)
-    target_link_libraries(fairmot
+    target_link_libraries(fairmotlib
         ${CXX_LIB}
         ${OMP_LIBRARY}
         ${ACCELERATE_FRAMEWORK}
     )
 else()
-    target_link_libraries(fairmot
+    target_link_libraries(fairmot_api
         libc++
     )
 endif()
@@ -239,7 +237,7 @@ install(DIRECTORY ${PROJECT_SOURCE_DIR}/src/ DESTINATION include
         FILES_MATCHING PATTERN "*.hpp")
 
 # Install library
-install(TARGETS fairmot
+install(TARGETS fairmotlib
         ARCHIVE DESTINATION lib)
 
 # Install executable (if desired)
