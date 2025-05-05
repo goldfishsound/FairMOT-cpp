@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 project(FairMOT)
 
+
+
 set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}")
 
 set(CMAKE_CXX_STANDARD 17)
@@ -143,12 +145,12 @@ set(SOURCES
 
 set(API_SOURCES
     src/api/src/FairMotAPI.cpp
-    src/api/include/FairMotAPI.hpp
-    ${PROJECT_SOURCE_DIR}/src
-    ${TORCH_INCLUDE_DIRS}
-    ${VISION_INCLUDE_DIRS}
-    ${OpenCV_INCLUDE_DIRS}
-    ${Python3_INCLUDE_DIRS}
+    src/Decoder.cpp
+    src/FairMot.cpp
+    src/KalmanFilter.cpp
+    src/Matching.cpp
+    src/STrack.cpp
+    src/Utils.cpp
 )
 
 add_library(fairmotlib STATIC ${API_SOURCES})
@@ -221,7 +223,8 @@ else()
     libc++)
 endif()
 
-
+add_subdirectory(test)
+enable_testing()
 
 # Set again for clarity
 set_property(TARGET FairMOT PROPERTY CXX_STANDARD 17)
@@ -243,3 +246,4 @@ install(TARGETS fairmotlib
 # Install executable (if desired)
 install(TARGETS FairMOT
         RUNTIME DESTINATION bin)
+
