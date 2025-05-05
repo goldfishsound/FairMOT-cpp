@@ -142,18 +142,18 @@ set(SOURCES
 # ================================================
 
 set(API_SOURCES
-    src/api/FairMotAPI.cpp
-)
-
-add_library(fairmotlib STATIC ${API_SOURCES})
-
-target_include_directories(fairmotlib PUBLIC
+    src/api/src/FairMotAPI.cpp
+    src/api/include/FairMotAPI.hpp
     ${PROJECT_SOURCE_DIR}/src
     ${TORCH_INCLUDE_DIRS}
     ${VISION_INCLUDE_DIRS}
     ${OpenCV_INCLUDE_DIRS}
     ${Python3_INCLUDE_DIRS}
 )
+
+add_library(fairmotlib STATIC ${API_SOURCES})
+
+target_include_directories(fairmotlib PUBLIC "${CMAKE_SOURCE_DIR}/src/api/include")
 
 target_link_libraries(fairmotlib
     Eigen3::Eigen
@@ -171,7 +171,7 @@ if(APPLE)
         ${ACCELERATE_FRAMEWORK}
     )
 else()
-    target_link_libraries(fairmot_api
+    target_link_libraries(fairmotlib
         libc++
     )
 endif()
