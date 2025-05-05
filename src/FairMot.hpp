@@ -31,8 +31,12 @@ class FairMot {
 
   std::vector<STrack> Update(const torch::Tensor &rDetections,
                              const torch::Tensor &rEmbeddings);
+    
+  void SetScoreThreshold(double scoreThreshold);
 
  private:
+  void LoadModel(const std::string &rModelPath);
+
   std::vector<TrackOutput> Postprocess(
       const std::vector<STrack> &rOnlineTargets);
   cv::Mat Preprocess(const cv::Mat &rImage);
@@ -46,7 +50,7 @@ class FairMot {
   const int mInputHeight;
   const int mInputWidth;
   const float mMinBoxArea;
-  const double mScoreThreshold;
+  double mScoreThreshold;
   const int mMaxTimeLost;
 
   int mFrameId;
