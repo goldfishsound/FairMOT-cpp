@@ -38,62 +38,63 @@ mFrameId{0},
 mLostStracks(),
 mTrackedStracks(),
 mRemoveStracks() {
-    // Set JIT flags.
-    FLAGS_torch_jit_enable_new_executor = false;
-    // Removed in LibTorch 2.0
-    // torch::jit::getProfilingMode() = false;   
-    // torch::jit::getExecutorMode() = false;
-    torch::jit::FusionStrategy fusion_strategy = {
-        {torch::jit::FusionBehavior::DYNAMIC, 1}};
-    torch::jit::setFusionStrategy(fusion_strategy);
-
-    try {
-        // Load the serialized model
-        mModel = torch::jit::load(rModelPath);
-        if (torch::mps::is_available()) {
-            std::cout << "Found MPS device." << std::endl;
-        }
-
-        // Perform inference or other operations on the module
-        // ...
-        std::cerr << "Success in loading the model: " << std::endl;
-//        std::cout << mModel.dump_to_str(true, false, false) << std::endl;
-
-    } catch (const c10::Error& e) {
-        std::cerr << "Error loading the model: " << e.what() << std::endl;
-    } catch (const std::exception& e) {
-        std::cerr << "Standard Exception: " << e.what() << std::endl;
-    } catch (...) {
-        std::cerr << "Unknown Error" << std::endl;
-    }
-   
-    // Get available device
-    torch::DeviceType device_type;
-    if (torch::cuda::is_available()) {
-        std::cout << "Using CUDA." << std::endl;
-        device_type = torch::kCUDA;
-    } 
-     else if (torch::mps::is_available()){
-         std::cout << "Using MPS." << std::endl;
-         device_type = torch::kMPS;
-     }
-    else {
-        std::cout << "Using CPU." << std::endl;
-        device_type = torch::kCPU;
-    }
-    
-    std::cout << "LibTorch version: " << TORCH_VERSION_MAJOR << "."
-    << TORCH_VERSION_MINOR << "."
-    << TORCH_VERSION_PATCH << std::endl;
-    
-    
-    mpDevice = new torch::Device(device_type);
-    mModel = torch::jit::optimize_for_inference(mModel);
-    mModel.to(*mpDevice);
+    this->LoadModel(rModelPath);
     this->WarmUp();
 }
 
+void FairMot::LoadModel(const std::string &rModelPath) {
+ // Set JIT flags.
+ FLAGS_torch_jit_enable_new_executor = false;
+
+ torch::jit::FusionStrategy fusion_strategy = {
+     {torch::jit::FusionBehavior::DYNAMIC, 1}};
+ torch::jit::setFusionStrategy(fusion_strategy);
+
+ try {
+     // Load the serialized model
+     mModel = torch::jit::load(rModelPath);
+
+     std::cerr << "Success in loading the model: " << std::endl;
+//        std::cout << mModel.dump_to_str(true, false, false) << std::endl;
+
+ } catch (const c10::Error& e) {
+     std::cerr << "Error loading the model: " << e.what() << std::endl;
+ } catch (const std::exception& e) {
+     std::cerr << "Standard Exception: " << e.what() << std::endl;
+ } catch (...) {
+     std::cerr << "Unknown Error" << std::endl;
+ }
+
+ // Get available device
+ torch::DeviceType device_type;
+ if (torch::cuda::is_available()) {
+     std::cout << "Using CUDA." << std::endl;
+     device_type = torch::kCUDA;
+ } 
+  else if (torch::mps::is_available()){
+      std::cout << "Using MPS." << std::endl;
+      device_type = torch::kMPS;
+  }
+ else {
+     std::cout << "Using CPU." << std::endl;
+     device_type = torch::kCPU;
+ }
+ 
+ std::cout << "LibTorch version: " << TORCH_VERSION_MAJOR << "."
+ << TORCH_VERSION_MINOR << "."
+ << TORCH_VERSION_PATCH << std::endl;
+ 
+ 
+ mpDevice = new torch::Device(device_type);
+ mModel = torch::jit::optimize_for_inference(mModel);
+ mModel.to(*mpDevice);
+}
+
 FairMot::~FairMot() { delete mpDevice; }
+
+void FairMot::SetScoreThreshold(double scoreThreshold) {
+    mScoreThreshold = scoreThreshold;
+}
 
 std::pair<torch::Tensor, torch::Tensor> FairMot::Predict(
                                                          const cv::Mat &rPaddedImage, const cv::Mat &rImage) {
