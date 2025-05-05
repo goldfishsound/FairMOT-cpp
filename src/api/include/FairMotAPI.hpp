@@ -1,0 +1,60 @@
+// FairMotAPI.hpp
+#ifndef FAIR_MOT_API_HPP_
+#define FAIR_MOT_API_HPP_
+
+#include <memory>
+#include <string>
+#include <vector>
+
+#ifdef _WIN32
+  #define TRACKER_API __declspec(dllexport)
+#else
+  #define TRACKER_API __attribute__((visibility("default")))
+#endif
+
+
+namespace fairmot {
+  class FairMot;  // Forward declaration only
+} // namespace fairmot
+
+class TRACKER_API Tracker {
+private:
+  std::unique_ptr<fairmot::FairMot> modelPointer;
+  std::string defaultModelPath = "../../weights/fairmot_dla34.pth";
+public:
+
+static constexpr std::size_t kBBoxSize = 4;
+static constexpr std::size_t kEmbeddingSize = 128;
+
+typedef std::array<float, kBBoxSize> BBox;
+typedef std::array<float, kEmbeddingSize> Embedding;
+
+class STrack;
+typedef std::shared_ptr<STrack> STrackPtr;
+
+struct TrackOutput {
+  BBox tlwh;
+  int track_id;
+  float score;
+};
+
+  // Default constructor
+  Tracker();  
+
+  Tracker(const std::string &rModelPath, double frameRate,
+          int maxPerImage, int trackBuffer);
+
+// Destructor
+  ~Tracker(); 
+
+  // Method to track objects in the image
+  // This function takes an image and a tracker object as input and returns a vector of TrackOutput
+  // containing the tracking results.
+  std::vector<Tracker::TrackOutput> TrackImage(const unsigned char &rImage, const int height, const int width);
+
+  // Threshold is a value to determine the minimum score for a detection to be considered valid
+  void SetScoreThreshold(double threshold);
+
+};
+
+#endif  // FAIR_MOT_API_HPP_
