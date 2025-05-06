@@ -165,6 +165,9 @@ target_link_libraries(fairmotlib
     ${VISION_LIBRARY}
 )
 
+add_subdirectory(test)
+enable_testing()
+
 # Platform-specific linking for the static library (if needed)
 if(APPLE)
     target_link_libraries(fairmotlib
@@ -223,8 +226,10 @@ else()
     libc++)
 endif()
 
-add_subdirectory(test)
-enable_testing()
+
+
+
+
 
 # Set again for clarity
 set_property(TARGET FairMOT PROPERTY CXX_STANDARD 17)
