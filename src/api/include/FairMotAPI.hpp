@@ -7,54 +7,56 @@
 #include <vector>
 
 #ifdef _WIN32
-  #define TRACKER_API __declspec(dllexport)
+#define TRACKER_API __declspec(dllexport)
 #else
-  #define TRACKER_API __attribute__((visibility("default")))
+#define TRACKER_API __attribute__((visibility("default")))
 #endif
 
-
-namespace fairmot {
-  class FairMot;  // Forward declaration only
+namespace fairmot
+{
+  class FairMot; // Forward declaration only
 } // namespace fairmot
 
-class TRACKER_API Tracker {
-private:
-  std::unique_ptr<fairmot::FairMot> modelPointer;
-  std::string defaultModelPath = "../../weights/fairmot_dla34.pth";
-public:
+namespace AWTracker
+{
+  class TRACKER_API Tracker
+  {
+  private:
+    std::unique_ptr<fairmot::FairMot> modelPointer;
+    std::string defaultModelPath = "/Users/thomas/Developer/projects/FairMOT-cpp/weights/fairmot_dla34_jit.pth";
+    static constexpr std::size_t kBBoxSize = 4;
+    static constexpr std::size_t kEmbeddingSize = 128;
+    typedef std::array<float, kBBoxSize> BBox;
+    typedef std::array<float, kEmbeddingSize> Embedding;
 
-static constexpr std::size_t kBBoxSize = 4;
-static constexpr std::size_t kEmbeddingSize = 128;
+  public:
+    struct TrackOutput
+    {
+      BBox tlwh;
+      int track_id;
+      float score;
+    };
 
-typedef std::array<float, kBBoxSize> BBox;
-typedef std::array<float, kEmbeddingSize> Embedding;
+    // Default constructor
+    Tracker();
 
-class STrack;
-typedef std::shared_ptr<STrack> STrackPtr;
+    Tracker(const std::string &rModelPath, double frameRate,
+            int maxPerImage, int trackBuffer);
 
-struct TrackOutput {
-  BBox tlwh;
-  int track_id;
-  float score;
-};
+    // Destructor
+    ~Tracker();
 
-  // Default constructor
-  Tracker();  
+    // Method to track objects in the image
+    // This function takes an image and a tracker object as input and returns a vector of TrackOutput
+    // containing the tracking results.
+    std::vector<Tracker::TrackOutput> TrackImage(const unsigned char &rImage, const int height, const int width);
 
-  Tracker(const std::string &rModelPath, double frameRate,
-          int maxPerImage, int trackBuffer);
+    // Method to get the score threshold
+    double GetScoreThreshold() const;
 
-// Destructor
-  ~Tracker(); 
+    // Threshold is a value to determine the minimum score for a detection to be considered valid
+    void SetScoreThreshold(double threshold);
+  };
 
-  // Method to track objects in the image
-  // This function takes an image and a tracker object as input and returns a vector of TrackOutput
-  // containing the tracking results.
-  std::vector<Tracker::TrackOutput> TrackImage(const unsigned char &rImage, const int height, const int width);
-
-  // Threshold is a value to determine the minimum score for a detection to be considered valid
-  void SetScoreThreshold(double threshold);
-
-};
-
-#endif  // FAIR_MOT_API_HPP_
+} // namespace AWTracker
+#endif // FAIR_MOT_API_HPP_
