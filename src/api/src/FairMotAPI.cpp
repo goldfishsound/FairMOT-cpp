@@ -1,63 +1,100 @@
 // FairMotAPI.cpp
 
-#include <string>
-#include <vector> 
-#include <opencv2/opencv.hpp>
-#include "../include/FairMotAPI.hpp"
+#include "FairMotAPI.hpp"
 #include "../../FairMot.hpp"
+#include <opencv2/opencv.hpp>
+#include <filesystem>
+#include <stdexcept>
+#include <iostream>
 
-// using namespace AWTracker;
+// Implementation class definition
+class Tracker::Impl
+{
+public:
+    Impl() = default;
 
-Tracker::Tracker(const std::string &rModelPath, double frameRate,
-    int maxPerImage, int trackBuffer)
-: modelPointer(std::make_unique<fairmot::FairMot>(
-rModelPath, frameRate, maxPerImage, trackBuffer)) {}
+    Impl(const std::string &rModelPath, double frameRate, int maxPerImage, int trackBuffer)
+        : modelPointer(std::make_shared<fairmot::FairMot>(rModelPath, frameRate, maxPerImage, trackBuffer)) {}
 
-Tracker::Tracker(){
-    // Default parameters
-    if (defaultModelPath.empty()) {
+    ~Impl() = default;
+
+    std::vector<Tracker::TrackOutput> TrackImage(const unsigned char *rImage, int height, int width)
+    {
+        cv::Mat image(height, width, CV_8UC3, const_cast<unsigned char *>(rImage));
+        std::vector<fairmot::TrackOutput> internalResult = modelPointer->Track(image);
+
+        std::vector<Tracker::TrackOutput> result;
+        result.reserve(internalResult.size());
+        for (const auto &t : internalResult)
+        {
+            result.emplace_back(Tracker::TrackOutput{t.tlwh, t.track_id, t.score});
+        }
+        return result;
+    }
+
+    double GetScoreThreshold() const
+    {
+        return modelPointer->GetScoreThreshold();
+    }
+
+    void SetScoreThreshold(double threshold)
+    {
+        if (threshold < 0.0 || threshold > 1.0)
+        {
+            throw std::out_of_range("scoreThreshold must be between 0.0 and 1.0");
+        }
+        modelPointer->SetScoreThreshold(threshold);
+    }
+
+    std::shared_ptr<fairmot::FairMot> modelPointer;
+    std::string defaultModelPath = "/Users/thomas/Developer/projects/FairMOT-cpp/weights/fairmot_dla34_jit.pth";
+};
+
+// Tracker class implementation
+
+// Default constructor
+Tracker::Tracker()
+    : pImpl(std::make_shared<Impl>())
+{
+    if (pImpl->defaultModelPath.empty())
+    {
         throw std::invalid_argument("Default model path is empty. Please provide a valid path.");
     }
 
-    if (!std::filesystem::exists(defaultModelPath)) {
+    if (!std::filesystem::exists(pImpl->defaultModelPath))
+    {
         throw std::invalid_argument("Default model path does not exist. Please provide a valid path.");
     }
-    std::string _modelPath = defaultModelPath;
-    double _frameRate = 25.0;
-    int _maxPerImage = 50;
-    int _trackBuffer = 120;
-    modelPointer = std::make_unique<fairmot::FairMot>(
-        _modelPath, _frameRate, _maxPerImage, _trackBuffer);
-    }
 
+    pImpl->modelPointer = std::make_shared<fairmot::FairMot>(
+        pImpl->defaultModelPath, 25.0, 50, 120);
+}
+
+// Parameterized constructor
+Tracker::Tracker(const std::string &rModelPath, double frameRate, int maxPerImage, int trackBuffer)
+    : pImpl(std::make_shared<Impl>(rModelPath, frameRate, maxPerImage, trackBuffer)) {}
+
+// Destructor
 Tracker::~Tracker() = default;
 
+// Copy constructor
+Tracker::Tracker(const Tracker &other)
+    : pImpl(std::make_shared<Impl>(*other.pImpl)) {}
+
+// TrackImage method
+std::vector<Tracker::TrackOutput> Tracker::TrackImage(const unsigned char *rImage, int height, int width)
+{
+    return pImpl->TrackImage(rImage, height, width);
+}
+
+// GetScoreThreshold method
+double Tracker::GetScoreThreshold() const
+{
+    return pImpl->GetScoreThreshold();
+}
+
+// SetScoreThreshold method
 void Tracker::SetScoreThreshold(double threshold)
 {
-    if (threshold >= 0.0 && threshold <= 1.0)
-    {
-        modelPointer->SetScoreThreshold(threshold);
-    }
-    else
-    {
-        throw std::out_of_range("scoreThreshold must be between 0.0 and 1.0");
-    }
-}
-
-double Tracker::GetScoreThreshold() const {
-    return modelPointer->GetScoreThreshold();
-}
-
-// Function to track objects in the image
-std::vector<Tracker::TrackOutput>  Tracker::TrackImage(const unsigned char* rImage, const int height, const int width) {
-    cv::Mat _image(height, width, CV_8UC3, const_cast<unsigned char*>(rImage));
-    std::vector<fairmot::TrackOutput> internalResult = modelPointer->Track(_image);
-    std::cout << "FairMotAPI - Number of tracking results: " << internalResult.size() << std::endl;
-    std::vector<Tracker::TrackOutput> result;
-    result.reserve(internalResult.size());
-
-    for (const auto& t : internalResult) {
-        result.emplace_back(Tracker::TrackOutput{t.tlwh, t.track_id, t.score});
-    }
-    return result;
+    pImpl->SetScoreThreshold(threshold);
 }

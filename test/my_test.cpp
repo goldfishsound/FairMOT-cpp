@@ -18,6 +18,12 @@ TEST(LibraryTest, DefaultConstructor) {
     // ASSERT_EQ(tracker, !nullptr);
 }
 
+TEST(LibraryTest, CopyConstructor) {
+    Tracker tracker(model_path, 25.0, 50, 120);
+    Tracker copy(tracker);
+    // ASSERT_EQ(copy, !nullptr);
+}
+
 TEST(LibraryTest, ParameterizedConstructor) {
     Tracker tracker(model_path, 25.0, 50, 120);
     // ASSERT_EQ(tracker, !nullptr);

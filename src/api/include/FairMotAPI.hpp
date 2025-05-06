@@ -17,49 +17,40 @@
 #define FAIRMOT_API __attribute__((visibility("default")))
 #endif
 
-namespace fairmot
-{
-  class FairMot; // Forward declaration only
-} // namespace fairmot
-
 class FAIRMOT_API Tracker
 {
-private:
-  std::unique_ptr<fairmot::FairMot> modelPointer;
-  std::string defaultModelPath = "/Users/thomas/Developer/projects/FairMOT-cpp/weights/fairmot_dla34_jit.pth";
-  static constexpr std::size_t kBBoxSize = 4;
-  static constexpr std::size_t kEmbeddingSize = 128;
-  typedef std::array<float, kBBoxSize> BBox;
-  typedef std::array<float, kEmbeddingSize> Embedding;
-
 public:
-  struct TrackOutput
-  {
-    BBox tlwh;
-    int track_id;
-    float score;
-  };
+    struct TrackOutput
+    {
+        std::array<float, 4> tlwh; // Bounding box
+        int track_id;
+        float score;
+    };
 
-  // Default constructor
-  Tracker();
+    // Default constructor
+    Tracker();
 
-  // Parameterized constructor
-  Tracker(const std::string &rModelPath, double frameRate,
-          int maxPerImage, int trackBuffer);
+    // Parameterized constructor
+    Tracker(const std::string &rModelPath, double frameRate, int maxPerImage, int trackBuffer);
 
-  // Destructor
-  ~Tracker();
+    // Destructor
+    ~Tracker();
 
-  // Method to track objects in the image
-  // This function takes an image and a tracker object as input and returns a vector of TrackOutput
-  // containing the tracking results.
-  std::vector<Tracker::TrackOutput> TrackImage(const unsigned char *rImage, const int height, const int width);
+    // Copy constructor
+    Tracker(const Tracker &other);
 
-  // Method to get the score threshold
-  double GetScoreThreshold() const;
+    // Method to track objects in the image
+    std::vector<TrackOutput> TrackImage(const unsigned char *rImage, int height, int width);
 
-  // Threshold is a value to determine the minimum score for a detection to be considered valid
-  void SetScoreThreshold(double threshold);
+    // Method to get the score threshold
+    double GetScoreThreshold() const;
+
+    // Method to set the score threshold
+    void SetScoreThreshold(double threshold);
+
+private:
+    class Impl; // Forward declaration of the implementation class
+    std::shared_ptr<Impl> pImpl; // Pointer to the implementation
 };
 
 #endif // FAIR_MOT_API_HPP_
