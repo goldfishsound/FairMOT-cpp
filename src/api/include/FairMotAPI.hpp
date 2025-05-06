@@ -31,7 +31,8 @@ public:
     Tracker();
 
     // Parameterized constructor
-    Tracker(const std::string &rModelPath, double frameRate, int maxPerImage, int trackBuffer);
+    Tracker(const std::string &rModelPath, double frameRate,
+            int maxPerImage, int trackBuffer);
 
     // Destructor
     ~Tracker();
@@ -40,7 +41,9 @@ public:
     Tracker(const Tracker &other);
 
     // Method to track objects in the image
-    std::vector<TrackOutput> TrackImage(const unsigned char *rImage, int height, int width);
+    // This function takes an image and a tracker object as input and returns a vector of TrackOutput
+    // containing the tracking results.
+    std::vector<Tracker::TrackOutput> TrackImage(const unsigned char* rImage, const int height, const int width);
 
     // Method to get the score threshold
     double GetScoreThreshold() const;
