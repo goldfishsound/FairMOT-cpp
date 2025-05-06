@@ -32,19 +32,27 @@ Tracker::Tracker(){
 
 Tracker::~Tracker() = default;
 
-void Tracker::SetScoreThreshold(double threshold) {
-    modelPointer->SetScoreThreshold(threshold);
+void Tracker::SetScoreThreshold(double threshold)
+{
+    if (threshold >= 0.0 && threshold <= 1.0)
+    {
+        modelPointer->SetScoreThreshold(threshold);
+    }
+    else
+    {
+        throw std::out_of_range("scoreThreshold must be between 0.0 and 1.0");
+    }
 }
 
 double Tracker::GetScoreThreshold() const {
     return modelPointer->GetScoreThreshold();
 }
+
 // Function to track objects in the image
-// This function takes an image and a tracker object as input and returns a vector of TrackOutput
-// containing the tracking results.
-std::vector<Tracker::TrackOutput>  Tracker::TrackImage(const unsigned char &rImage, const int height, const int width) {
-    cv::Mat _image(height, width, CV_8UC3, const_cast<unsigned char*>(&rImage));
+std::vector<Tracker::TrackOutput>  Tracker::TrackImage(const unsigned char* rImage, const int height, const int width) {
+    cv::Mat _image(height, width, CV_8UC3, const_cast<unsigned char*>(rImage));
     std::vector<fairmot::TrackOutput> internalResult = modelPointer->Track(_image);
+    std::cout << "FairMotAPI - Number of tracking results: " << internalResult.size() << std::endl;
     std::vector<Tracker::TrackOutput> result;
     result.reserve(internalResult.size());
 
