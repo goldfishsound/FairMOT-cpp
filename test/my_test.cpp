@@ -13,6 +13,10 @@ int Add(int a, int b) {
     return a + b;
 }
 
+// AWTracker::Tracker tracker();
+// AWTracker::Tracker tracker(model_path, 25.0, 50, 120);
+// std::cout << "Tracker constructed successfully" << std::endl;
+
 TEST(LibraryTest, DefaultConstructor) {
     Tracker tracker;
     // ASSERT_EQ(tracker, !nullptr);
