@@ -97,7 +97,11 @@ double FairMot::GetScoreThreshold() const {
 }
 
 void FairMot::SetScoreThreshold(double scoreThreshold) {
-    mScoreThreshold = scoreThreshold;
+    if (scoreThreshold >= 0.0 && scoreThreshold <= 1.0) {
+        mScoreThreshold = scoreThreshold;
+    } else {
+        throw std::out_of_range("scoreThreshold must be between 0.0 and 1.0");
+    }
 }
 
 std::pair<torch::Tensor, torch::Tensor> FairMot::Predict(
