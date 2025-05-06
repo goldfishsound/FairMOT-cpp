@@ -92,6 +92,10 @@ void FairMot::LoadModel(const std::string &rModelPath) {
 
 FairMot::~FairMot() { delete mpDevice; }
 
+double FairMot::GetScoreThreshold() const {
+    return mScoreThreshold;
+}
+
 void FairMot::SetScoreThreshold(double scoreThreshold) {
     mScoreThreshold = scoreThreshold;
 }

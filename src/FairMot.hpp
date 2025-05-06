@@ -32,6 +32,8 @@ class FairMot {
   std::vector<STrack> Update(const torch::Tensor &rDetections,
                              const torch::Tensor &rEmbeddings);
     
+  double GetScoreThreshold() const;
+  
   void SetScoreThreshold(double scoreThreshold);
 
  private:
