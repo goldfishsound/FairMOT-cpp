@@ -235,20 +235,37 @@ endif()
 set_property(TARGET FairMOT PROPERTY CXX_STANDARD 17)
 
 
-# Set output directories for executables and libraries
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)    # static libs (.a)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)    # shared libs (.dylib / .so)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)    # executables
+# Install settings for fairmotlib
+# Set install prefix (optional: user can override at install time)
+set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/product/FairMotPackage")
 
-# Install headers (optional, but useful for consumers)
-install(DIRECTORY ${PROJECT_SOURCE_DIR}/src/ DESTINATION include
-        FILES_MATCHING PATTERN "*.hpp")
-
-# Install library
+# Install the library
 install(TARGETS fairmotlib
-        ARCHIVE DESTINATION lib)
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION bin
+)
 
-# Install executable (if desired)
-install(TARGETS FairMOT
-        RUNTIME DESTINATION bin)
+# Install the public header
+install(FILES ${CMAKE_SOURCE_DIR}/src/api/include/FairMotAPI.hpp DESTINATION include)
+
+# Install the model resource
+install(FILES ${CMAKE_SOURCE_DIR}/weights/fairmot_dla34_jit.pth DESTINATION resources)
+
+# # Set output directories for executables
+# set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)    # static libs (.a)
+# set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)    # shared libs (.dylib / .so)
+# set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)    # executables
+
+# # Install headers (optional, but useful for consumers)
+# install(DIRECTORY ${PROJECT_SOURCE_DIR}/src/ DESTINATION include
+#         FILES_MATCHING PATTERN "*.hpp")
+
+# # Install library
+# install(TARGETS fairmotlib
+#         ARCHIVE DESTINATION lib)
+
+# # Install executable (if desired)
+# install(TARGETS FairMOT
+#         RUNTIME DESTINATION bin)
 
