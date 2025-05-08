@@ -2,19 +2,20 @@ cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 project(FairMOT)
 
 
-
 set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
-
 # Apple Silicon specific flags
 if(APPLE)
     message(STATUS "Apple detected")
-    set(ACCELERATE_FRAMEWORK "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/Accelerate.framework/Accelerate.tbd")
+    find_library(ACCELERATE_FRAMEWORK
+    NAMES Accelerate
+    PATHS ${CMAKE_SYSTEM_FRAMEWORK_PATH}
+    PATH_SUFFIXES Frameworks
+)
     # Check if the architecture is arm64 (Apple Silicon)
     if(CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
         message(STATUS "Apple Silicon detected")
@@ -26,22 +27,9 @@ if(APPLE)
         set(CMAKE_OSX_ARCHITECTURES "x86_64")
         set(USING_MPS 0)
     endif()
-
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdeclspec -D__cplusplus=201703L")
-    set(CMAKE_C_COMPILER /Library/Developer/CommandLineTools/usr/bin/clang)
-    set(CMAKE_CXX_COMPILER /Library/Developer/CommandLineTools/usr/bin/clang++)
-
-    execute_process(
-        COMMAND xcrun --show-sdk-path
-        OUTPUT_VARIABLE MACOS_SDK_PATH
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-    message(STATUS "macOS SDK path: ${MACOS_SDK_PATH}")
-    include_directories(SYSTEM "${MACOS_SDK_PATH}/usr/include/c++/v1")
 endif()
 
-# Creates compile_commands.json file in build folder.
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 
 # Set paths to OpenCV, Torch, and TorchVision.
 set(TORCH_DIR "${CMAKE_SOURCE_DIR}/third_party/torch")
@@ -107,6 +95,7 @@ include_directories(
     ${Python3_INCLUDE_DIRS}
 )
 
+# Compiler
 
 # Warning flags
 set(FairMOT_CXX_WARNING_FLAGS
@@ -114,11 +103,14 @@ set(FairMOT_CXX_WARNING_FLAGS
     -Wextra
     -Wshadow
     -Wno-unused
+    -Wno-unused-parameter
     -Wmissing-declarations
     -Wmissing-include-dirs
 )
-string(JOIN " " FairMOT_CXX_WARNING_FLAGS_STR ${FairMOT_CXX_WARNING_FLAGS})
 
+# Other flags
+string(JOIN " " FairMOT_CXX_WARNING_FLAGS_STR ${FairMOT_CXX_WARNING_FLAGS})
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FairMOT_CXX_WARNING_FLAGS_STR}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xpreprocessor -fopenmp -I/usr/local/include -ftree-vectorize -march=native")
@@ -127,6 +119,8 @@ if(FairMOT_PROFILE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
 endif()
 
+# Creates compile_commands.json file in build folder.
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Source files
 set(SOURCES
     src/Decoder.cpp
@@ -140,46 +134,40 @@ set(SOURCES
 )
 
 # ================================================
-# Static library for fairmotlib
+# Static library for fairmot
 # ================================================
 
-set(API_SOURCES
+add_library(awtracker STATIC 
+    ${SOURCES}
     src/api/src/FairMotAPI.cpp
-    src/Decoder.cpp
-    src/FairMot.cpp
-    src/KalmanFilter.cpp
-    src/Matching.cpp
-    src/STrack.cpp
-    src/Utils.cpp
 )
 
-add_library(fairmotlib STATIC ${API_SOURCES})
+target_include_directories(awtracker PUBLIC "${CMAKE_SOURCE_DIR}/src/api/include")
 
-target_include_directories(fairmotlib PUBLIC "${CMAKE_SOURCE_DIR}/src/api/include")
-
-target_link_libraries(fairmotlib
+target_link_libraries(awtracker PUBLIC
     Eigen3::Eigen
     ${OpenCV_LIBRARIES}
     ${Python3_LIBRARIES}
     ${TORCH_LIBRARIES}
     ${VISION_LIBRARY}
+    ${OMP_LIBRARY}
+    ${ACCELERATE_FRAMEWORK}
 )
 
-add_subdirectory(test)
-enable_testing()
+
 
 # Platform-specific linking for the static library (if needed)
-if(APPLE)
-    target_link_libraries(fairmotlib
-        ${CXX_LIB}
-        ${OMP_LIBRARY}
-        ${ACCELERATE_FRAMEWORK}
-    )
-else()
-    target_link_libraries(fairmotlib
-        libc++
-    )
-endif()
+# if(APPLE)
+#     target_link_libraries(awtrackerPUBLIC
+#         # ${CXX_LIB}
+#         # ${OMP_LIBRARY}
+#         # ${ACCELERATE_FRAMEWORK}
+#     )
+# else()
+#     target_link_libraries(fairmot
+#         libc++
+#     )
+# endif()
 
 
 
@@ -204,6 +192,9 @@ target_link_libraries(FairMOT
     ${Python3_LIBRARIES}
     ${TORCH_LIBRARIES}
     ${VISION_LIBRARY}
+    ${CXX_LIB}
+    ${OMP_LIBRARY}
+    ${ACCELERATE_FRAMEWORK}
 )
 
 # Platform-specific linking
@@ -235,12 +226,12 @@ endif()
 set_property(TARGET FairMOT PROPERTY CXX_STANDARD 17)
 
 
-# Install settings for fairmotlib
+# Install settings for fairmot
 # Set install prefix (optional: user can override at install time)
 set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/product/FairMotPackage")
 
 # Install the library
-install(TARGETS fairmotlib
+install(TARGETS awtracker 
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin
@@ -262,10 +253,12 @@ install(FILES ${CMAKE_SOURCE_DIR}/weights/fairmot_dla34_jit.pth DESTINATION reso
 #         FILES_MATCHING PATTERN "*.hpp")
 
 # # Install library
-# install(TARGETS fairmotlib
+# install(TARGETS fairmot
 #         ARCHIVE DESTINATION lib)
 
 # # Install executable (if desired)
 # install(TARGETS FairMOT
 #         RUNTIME DESTINATION bin)
 
+add_subdirectory(test)
+enable_testing()
