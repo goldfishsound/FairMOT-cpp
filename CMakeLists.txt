@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 project(FairMOT)
 
-
 set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}")
 
 set(CMAKE_CXX_STANDARD 17)
@@ -29,13 +28,13 @@ if(APPLE)
     endif()
 endif()
 
-
-
+# ================================================
+# Include directories
+# ================================================
 # Set paths to OpenCV, Torch, and TorchVision.
 set(TORCH_DIR "${CMAKE_SOURCE_DIR}/third_party/torch")
 set(VISION_DIR "${CMAKE_SOURCE_DIR}/third_party/vision")
 set(OPENCV_DIR "${CMAKE_SOURCE_DIR}/third_party/opencv")
-
 
 #Torch
 set(TORCH_INCLUDE_DIRS "${TORCH_DIR}/include")
@@ -56,7 +55,6 @@ endforeach(lib ${TORCH_LIBS})
 # Include dir
 set(VISION_INCLUDE_DIRS "${VISION_DIR}/include")
 message(STATUS "TorchVision include dirs: ${VISION_INCLUDE_DIRS}")
-
 # library dir
 file(GLOB VISION_LIBRARY "${VISION_DIR}/lib/*.dylib" "${VISION_DIR}/lib/*.a")
 foreach(lib ${VISION_LIBRARY})
@@ -84,7 +82,7 @@ foreach(lib ${OpenCV_LIBRARIES})
 endforeach(lib ${OpenCV_LIBS})
 
 #Python
-find_package(Python3 COMPONENTS Development)
+find_package(Python3 COMPONENTS Development) #Seems we're not using this
 
 # Include header files for torch, torchvision, opencv, and python.
 include_directories(
@@ -95,8 +93,9 @@ include_directories(
     ${Python3_INCLUDE_DIRS}
 )
 
+# ================================================
 # Compiler
-
+# ================================================
 # Warning flags
 set(FairMOT_CXX_WARNING_FLAGS
     -Wall
@@ -121,7 +120,10 @@ endif()
 
 # Creates compile_commands.json file in build folder.
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+# ================================================
 # Source files
+# ================================================
 set(SOURCES
     src/Decoder.cpp
     src/FairMot.cpp
@@ -134,17 +136,19 @@ set(SOURCES
 )
 
 # ================================================
-# Static library for fairmot
+# Shared library
 # ================================================
-
-add_library(awtracker STATIC 
+add_library(AWTracker SHARED 
     ${SOURCES}
     src/api/src/FairMotAPI.cpp
 )
 
-target_include_directories(awtracker PUBLIC "${CMAKE_SOURCE_DIR}/src/api/include")
+# Define the macro so that __declspec(dllexport) or visibility gets used
+target_compile_definitions(AWTracker PRIVATE AWTRACKER_BUILD)
 
-target_link_libraries(awtracker PUBLIC
+target_include_directories(AWTracker PUBLIC "${CMAKE_SOURCE_DIR}/src/api/include")
+
+target_link_libraries(AWTracker PUBLIC
     Eigen3::Eigen
     ${OpenCV_LIBRARIES}
     ${Python3_LIBRARIES}
@@ -154,23 +158,15 @@ target_link_libraries(awtracker PUBLIC
     ${ACCELERATE_FRAMEWORK}
 )
 
+# Optional: set version info
+set_target_properties(AWTracker PROPERTIES
+    VERSION 1.0
+    SOVERSION 1
+)
 
-
-# Platform-specific linking for the static library (if needed)
-# if(APPLE)
-#     target_link_libraries(awtrackerPUBLIC
-#         # ${CXX_LIB}
-#         # ${OMP_LIBRARY}
-#         # ${ACCELERATE_FRAMEWORK}
-#     )
-# else()
-#     target_link_libraries(fairmot
-#         libc++
-#     )
-# endif()
-
-
-
+# ================================================
+# Executable
+# ================================================
 if(FairMOT_EVAL)
     list(APPEND SOURCES src/main_eval.cpp)
 else()
@@ -185,7 +181,9 @@ target_include_directories(FairMOT
         ${PROJECT_SOURCE_DIR}/third_party/mini
 )
 
-# Link libraries
+# ================================================
+# Linking
+# ================================================
 target_link_libraries(FairMOT
     Eigen3::Eigen
     ${OpenCV_LIBRARIES}
@@ -217,25 +215,21 @@ else()
     libc++)
 endif()
 
-
-
-
-
-
-# Set again for clarity
-set_property(TARGET FairMOT PROPERTY CXX_STANDARD 17)
-
-
-# Install settings for fairmot
-# Set install prefix (optional: user can override at install time)
+# ================================================
+# Installation
+# ================================================
 set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/product/FairMotPackage")
 
-# Install the library
-install(TARGETS awtracker 
+# Install library
+install(TARGETS AWTracker 
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
-    RUNTIME DESTINATION bin
+    # RUNTIME DESTINATION bin
 )
+
+# # Install executable (if desired)
+install(TARGETS FairMOT
+        RUNTIME DESTINATION bin)
 
 # Install the public header
 install(FILES ${CMAKE_SOURCE_DIR}/src/api/include/FairMotAPI.hpp DESTINATION include)
@@ -243,22 +237,8 @@ install(FILES ${CMAKE_SOURCE_DIR}/src/api/include/FairMotAPI.hpp DESTINATION inc
 # Install the model resource
 install(FILES ${CMAKE_SOURCE_DIR}/weights/fairmot_dla34_jit.pth DESTINATION resources)
 
-# # Set output directories for executables
-# set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)    # static libs (.a)
-# set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)    # shared libs (.dylib / .so)
-# set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)    # executables
-
-# # Install headers (optional, but useful for consumers)
-# install(DIRECTORY ${PROJECT_SOURCE_DIR}/src/ DESTINATION include
-#         FILES_MATCHING PATTERN "*.hpp")
-
-# # Install library
-# install(TARGETS fairmot
-#         ARCHIVE DESTINATION lib)
-
-# # Install executable (if desired)
-# install(TARGETS FairMOT
-#         RUNTIME DESTINATION bin)
-
+# ================================================
+# Testing
+# ================================================
 add_subdirectory(test)
 enable_testing()
