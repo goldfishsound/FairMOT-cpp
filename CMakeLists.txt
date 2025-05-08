@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 project(FairMOT)
 
+set(PACKAGE_DIR "${CMAKE_SOURCE_DIR}/product/FairMotPackage")
 set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}")
 
 set(CMAKE_CXX_STANDARD 17)
