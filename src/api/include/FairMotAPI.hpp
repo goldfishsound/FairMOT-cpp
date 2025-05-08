@@ -7,9 +7,13 @@
 #include <vector>
 
 #ifdef _WIN32
-#define TRACKER_API __declspec(dllexport)
+  #ifdef AWTRACKER_BUILD
+    #define AWTRACKER_API __declspec(dllexport)
+  #else
+    #define AWTRACKER_API __declspec(dllimport)
+  #endif
 #else
-#define TRACKER_API __attribute__((visibility("default")))
+  #define AWTRACKER_API __attribute__((visibility("default")))
 #endif
 
 namespace fairmot
@@ -19,7 +23,7 @@ namespace fairmot
 
 namespace AWTracker
 {
-  class TRACKER_API Tracker
+  class AWTRACKER_API Tracker
   {
   private:
     std::unique_ptr<fairmot::FairMot> modelPointer;
