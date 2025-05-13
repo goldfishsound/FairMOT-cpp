@@ -139,17 +139,17 @@ set(SOURCES
 # ================================================
 # Shared library
 # ================================================
-add_library(AWTracker SHARED 
+add_library(fairmotcore SHARED 
     ${SOURCES}
     src/api/src/FairMotAPI.cpp
 )
 
 # Define the macro so that __declspec(dllexport) or visibility gets used
-target_compile_definitions(AWTracker PRIVATE AWTRACKER_BUILD)
+target_compile_definitions(fairmotcore PRIVATE FAIRMOTCORE_BUILD)
 
-target_include_directories(AWTracker PUBLIC "${CMAKE_SOURCE_DIR}/src/api/include")
+target_include_directories(fairmotcore PUBLIC "${CMAKE_SOURCE_DIR}/src/api/include")
 
-target_link_libraries(AWTracker PUBLIC
+target_link_libraries(fairmotcore PUBLIC
     Eigen3::Eigen
     ${OpenCV_LIBRARIES}
     ${Python3_LIBRARIES}
@@ -160,7 +160,7 @@ target_link_libraries(AWTracker PUBLIC
 )
 
 # Optional: set version info
-set_target_properties(AWTracker PROPERTIES
+set_target_properties(fairmotcore PROPERTIES
     VERSION 1.0
     SOVERSION 1
 )
@@ -222,7 +222,7 @@ endif()
 set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/product/FairMotPackage")
 
 # Install library
-install(TARGETS AWTracker 
+install(TARGETS fairmotcore 
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     # RUNTIME DESTINATION bin
