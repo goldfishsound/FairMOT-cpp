@@ -6,7 +6,7 @@
 #include "../include/FairMotAPI.hpp"
 #include "../../FairMot.hpp"
 
-using namespace AWTracker;
+// using namespace AWTracker;
 
 Tracker::Tracker(const std::string &rModelPath, double frameRate,
     int maxPerImage, int trackBuffer)
