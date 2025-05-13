@@ -33,7 +33,7 @@ file(GLOB_RECURSE DEP_LIBS
 )
 
 target_link_libraries(my_test 
-    "${PACKAGE_DIR}/lib/libAWTracker.dylib"
+    "${PACKAGE_DIR}/lib/libfairmotcore.dylib"
     ${DEP_LIBS}
     ${ACCELERATE_FRAMEWORK}
     GTest::gtest 
