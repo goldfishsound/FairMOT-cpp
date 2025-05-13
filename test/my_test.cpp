@@ -8,25 +8,23 @@
 
 std::string model_path = "/Users/thomas/Developer/projects/FairMOT-cpp/weights/fairmot_dla34_jit.pth";
 
-
-
 // A simple function to test
 int Add(int a, int b) {
     return a + b;
 }
 
 TEST(LibraryTest, DefaultConstructor) {
-    AWTracker::Tracker tracker;
+    Tracker tracker;
     // ASSERT_EQ(tracker, !nullptr);
 }
 
 TEST(LibraryTest, ParameterizedConstructor) {
-    AWTracker::Tracker tracker(model_path, 25.0, 50, 120);
+    Tracker tracker(model_path, 25.0, 50, 120);
     // ASSERT_EQ(tracker, !nullptr);
 }
 
 TEST(LibraryTest, SetScoreThreshold) {
-    AWTracker::Tracker tracker(model_path, 25.0, 50, 120);
+    Tracker tracker(model_path, 25.0, 50, 120);
     tracker.SetScoreThreshold(0.5);
     EXPECT_EQ(tracker.GetScoreThreshold(), 0.5);
 }
@@ -41,13 +39,11 @@ TEST(LibraryTest, TrackImage)
     int width = image.cols;
     int height = image.rows;
     std::cout << "Image dimensions: " << width << "x" << height << std::endl;
-    // if (image.type() != CV_8UC3) {
-    //     image.convertTo(image, CV_8UC3);
-    // }
+
     const unsigned char* image_data = image.data;
 
-    AWTracker::Tracker tracker(model_path, 25.0, 50, 120);
-    std::vector<AWTracker::Tracker::TrackOutput>  results = tracker.TrackImage(image_data, height, width);
+    Tracker tracker(model_path, 25.0, 50, 120);
+    std::vector<Tracker::TrackOutput>  results = tracker.TrackImage(image_data, height, width);
     
     std::cout << "Number of tracking results: " << results.size() << std::endl;
     EXPECT_FALSE(results.empty()) << "Tracking results should not be empty";
@@ -58,7 +54,6 @@ TEST(LibraryTest, TrackImage)
                   << ", " << result.tlwh[2] << ", " << result.tlwh[3] << "]" << std::endl;
     }
 }
-
 
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
