@@ -41,9 +41,12 @@ public:
     Tracker(const Tracker &other);
 
   // Method to track objects in the image
-  // This function takes an image and a tracker object as input and returns a vector of TrackOutput
-  // containing the tracking results.
-  std::vector<Tracker::TrackOutput> TrackImage(const unsigned char *rImage, const int height, const int width);
+  // This function takes a BRG image as input and returns a vector of TrackOutput
+  std::vector<Tracker::TrackOutput> TrackImageBGR(const unsigned char *rImage, const int height, const int width);
+
+    // Method to track objects in the image
+    // This function takes a RGB image as input and returns a vector of TrackOutput
+  std::vector<Tracker::TrackOutput> TrackImageRGB(const unsigned char *rImage, const int height, const int width);
 
   // Method to get the score threshold
   double GetScoreThreshold() const;

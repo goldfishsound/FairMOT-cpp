@@ -18,9 +18,26 @@ public:
 
     ~Impl() = default;
 
-    std::vector<Tracker::TrackOutput> TrackImage(const unsigned char *rImage, int height, int width)
+    // TrackImage method for RGB image
+    std::vector<Tracker::TrackOutput> TrackImageBGR(const unsigned char *rImage, int height, int width)
     {
         cv::Mat image(height, width, CV_8UC3, const_cast<unsigned char *>(rImage));
+        std::vector<fairmot::TrackOutput> internalResult = modelPointer->Track(image);
+
+        std::vector<Tracker::TrackOutput> result;
+        result.reserve(internalResult.size());
+        for (const auto &t : internalResult)
+        {
+            result.emplace_back(Tracker::TrackOutput{t.tlwh, t.track_id, t.score});
+        }
+        return result;
+    }
+
+    // TrackImage method for RGB image
+    std::vector<Tracker::TrackOutput> TrackImageRGB(const unsigned char *rImage, int height, int width)
+    {
+        cv::Mat image(height, width, CV_8UC3, const_cast<unsigned char *>(rImage));
+        cv::cvtColor(image, image, cv::COLOR_RGB2BGR);
         std::vector<fairmot::TrackOutput> internalResult = modelPointer->Track(image);
 
         std::vector<Tracker::TrackOutput> result;
@@ -81,10 +98,16 @@ Tracker::~Tracker() = default;
 Tracker::Tracker(const Tracker &other)
     : pImpl(std::make_shared<Impl>(*other.pImpl)) {}
 
-// TrackImage method
-std::vector<Tracker::TrackOutput> Tracker::TrackImage(const unsigned char *rImage, int height, int width)
+// TrackImage method for BRG images
+std::vector<Tracker::TrackOutput> Tracker::TrackImageBGR(const unsigned char *rImage, int height, int width)
 {
-    return pImpl->TrackImage(rImage, height, width);
+    return pImpl->TrackImageBGR(rImage, height, width);
+}
+
+// TrackImage method for BRG images
+std::vector<Tracker::TrackOutput> Tracker::TrackImageRGB(const unsigned char *rImage, int height, int width)
+{
+    return pImpl->TrackImageRGB(rImage, height, width);
 }
 
 // GetScoreThreshold method
