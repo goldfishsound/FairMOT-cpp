@@ -5,6 +5,7 @@
 #include <iostream>
 #include <c10/util/Exception.h>
 #include <opencv2/opencv.hpp>
+#include "my_test.h"
 
 std::string model_path = "/Users/thomas/Developer/projects/FairMOT-cpp/weights/fairmot_dla34_jit.pth";
 
@@ -49,23 +50,32 @@ TEST(LibraryTest, TrackImage)
     int width = image.cols;
     int height = image.rows;
     std::cout << "Image dimensions: " << width << "x" << height << std::endl;
-
-    const unsigned char* image_data = image.data;
-
     Tracker tracker(model_path, 25.0, 50, 120);
-    std::vector<Tracker::TrackOutput>  results = tracker.TrackImage(image_data, height, width);
-    
+
+    const unsigned char* image_data_BGR = image.data;
+    std::vector<Tracker::TrackOutput>  results_BGR = tracker.TrackImageBGR(image_data_BGR, height, width);
+    PrintResults(results_BGR);
+
+    cv::cvtColor(image, image, cv::COLOR_BGR2RGB);
+    const unsigned char* image_data_RGB = image.data;
+    std::vector<Tracker::TrackOutput> results_RGB = tracker.TrackImageRGB(image_data_RGB, height, width);
+    PrintResults(results_RGB);
+}
+
+void PrintResults(std::__1::vector<Tracker::TrackOutput> &results)
+{
     std::cout << "Number of tracking results: " << results.size() << std::endl;
     EXPECT_FALSE(results.empty()) << "Tracking results should not be empty";
     EXPECT_EQ(results.size(), 3) << "Expected 3 tracking results";
-    for (const auto& result : results) {
+    for (const auto &result : results)
+    {
         std::cout << "Track ID: " << result.track_id << ", Score: " << result.score
                   << ", Bounding Box: [" << result.tlwh[0] << ", " << result.tlwh[1]
                   << ", " << result.tlwh[2] << ", " << result.tlwh[3] << "]" << std::endl;
     }
 }
-
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }
