@@ -53,16 +53,16 @@ TEST(LibraryTest, TrackImage)
     Tracker tracker(model_path, 25.0, 50, 120);
 
     const unsigned char* image_data_BGR = image.data;
-    std::vector<Tracker::TrackOutput>  results_BGR = tracker.TrackImageBGR(image_data_BGR, height, width);
+    std::vector<TrackOutput>  results_BGR = tracker.TrackImageBGR(image_data_BGR, height, width);
     PrintResults(results_BGR);
 
     cv::cvtColor(image, image, cv::COLOR_BGR2RGB);
     const unsigned char* image_data_RGB = image.data;
-    std::vector<Tracker::TrackOutput> results_RGB = tracker.TrackImageRGB(image_data_RGB, height, width);
+    std::vector<TrackOutput> results_RGB = tracker.TrackImageRGB(image_data_RGB, height, width);
     PrintResults(results_RGB);
 }
 
-void PrintResults(std::__1::vector<Tracker::TrackOutput> &results)
+void PrintResults(std::__1::vector<TrackOutput> &results)
 {
     std::cout << "Number of tracking results: " << results.size() << std::endl;
     EXPECT_FALSE(results.empty()) << "Tracking results should not be empty";
