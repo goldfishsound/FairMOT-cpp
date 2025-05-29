@@ -53,13 +53,39 @@ TEST(LibraryTest, TrackImage)
     Tracker tracker(model_path, 25.0, 50, 120);
 
     const unsigned char* image_data_BGR = image.data;
-    std::vector<TrackOutput>  results_BGR = tracker.TrackImageBGR(image_data_BGR, height, width);
+    TrackOutputVector  results_BGR = tracker.TrackImageBGR(image_data_BGR, height, width);
     PrintResults(results_BGR);
 
     cv::cvtColor(image, image, cv::COLOR_BGR2RGB);
     const unsigned char* image_data_RGB = image.data;
-    std::vector<TrackOutput> results_RGB = tracker.TrackImageRGB(image_data_RGB, height, width);
+    TrackOutputVector results_RGB = tracker.TrackImageRGB(image_data_RGB, height, width);
     PrintResults(results_RGB);
+}
+
+TEST(LibraryTest, TestIntVector)
+{
+    Tracker tracker(model_path, 25.0, 50, 120);
+    std::vector<float> int_vector = tracker.TestIntVector();
+    std::cout << "Int vector size: " << int_vector.size() << std::endl;
+    for (size_t i = 0; i < int_vector.size(); ++i) {
+        std::cout << "Element " << i << ": " << int_vector[i] << std::endl;
+    }
+    EXPECT_EQ(int_vector.size(), 3) << "Expected vector size of 3";
+    EXPECT_FLOAT_EQ(int_vector[0], 1.0f) << "Expected first element to be 1.0";
+    EXPECT_FLOAT_EQ(int_vector[1], 2.0f) << "Expected second element to be 2.0";
+    EXPECT_FLOAT_EQ(int_vector[2], 3.0f) << "Expected third element to be 3.0";
+}
+ 
+
+TEST(LibraryTest, TestOutputTrackVector)
+{
+    Tracker tracker(model_path, 25.0, 50, 120);
+    TrackOutputVector results = tracker.TestOutputTrackVector();
+    PrintResults(results);
+    EXPECT_EQ(results.size(), 3) << "Expected vector size of 3";
+    EXPECT_EQ(results[0].track_id, 1) << "Expected first track ID to be 1";
+    EXPECT_FLOAT_EQ(results[0].score, 0.9f) << "Expected first score to be 0.9";
+    EXPECT_FLOAT_EQ(results[0].tlwh[0], 100.0f) << "Expected first bounding box tlwh[0] to be 100.0";
 }
 
 void PrintResults(std::__1::vector<TrackOutput> &results)

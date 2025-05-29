@@ -20,7 +20,7 @@ public:
     ~Impl() = default;
 
     // TrackImage method for RGB image
-    std::vector<TrackOutput> TrackImageBGR(const unsigned char *rImage, int height, int width)
+    TrackOutputVector TrackImageBGR(const unsigned char *rImage, int height, int width)
     {
         cv::Mat image(height, width, CV_8UC3, const_cast<unsigned char *>(rImage));
         std::vector<fairmot::TrackOutput> internalResult = modelPointer->Track(image);
@@ -37,7 +37,8 @@ public:
         }
         return result;
     }
-
+    
+    // - ToDo: Method no longer needed - Remove
     // TrackImage method for RGB image
     TrackOutputList TrackImageBGRRaw(const unsigned char *rImage, int height, int width)
     {
@@ -50,13 +51,13 @@ public:
     }
 
     // TrackImage method for RGB image
-    std::vector<TrackOutput> TrackImageRGB(const unsigned char *rImage, int height, int width)
+    TrackOutputVector TrackImageRGB(const unsigned char *rImage, int height, int width)
     {
         cv::Mat image(height, width, CV_8UC3, const_cast<unsigned char *>(rImage));
         cv::cvtColor(image, image, cv::COLOR_RGB2BGR);
         std::vector<fairmot::TrackOutput> internalResult = modelPointer->Track(image);
 
-        std::vector<TrackOutput> result;
+        TrackOutputVector result;
         result.reserve(internalResult.size());
         for (const auto &t : internalResult)
         {
@@ -69,6 +70,7 @@ public:
         return result;
     }
 
+    // - ToDo: Method no longer needed - Remove
     // TrackImage method for RGB image
     TrackOutputList TrackImageRGBRaw(const unsigned char *rImage, int height, int width)
     {
@@ -127,11 +129,12 @@ Tracker::Tracker(const std::string &rModelPath, double frameRate, int maxPerImag
 Tracker::~Tracker() = default;
 
 // TrackImage method for BRG images
-std::vector<TrackOutput> Tracker::TrackImageBGR(const unsigned char *rImage, int height, int width)
+TrackOutputVector Tracker::TrackImageBGR(const unsigned char *rImage, int height, int width)
 {
     return pImpl->TrackImageBGR(rImage, height, width);
 }
 
+// - ToDo: Method no longer needed - Remove
 // TrackImageRaw method for BRG images
 TrackOutputList Tracker::TrackImageBGRRaw(const unsigned char *rImage, int height, int width)
 {
@@ -139,11 +142,12 @@ TrackOutputList Tracker::TrackImageBGRRaw(const unsigned char *rImage, int heigh
 }
 
 // TrackImage method for BRG images
-std::vector<TrackOutput> Tracker::TrackImageRGB(const unsigned char *rImage, int height, int width)
+TrackOutputVector Tracker::TrackImageRGB(const unsigned char *rImage, int height, int width)
 {
     return pImpl->TrackImageRGB(rImage, height, width);
 }
 
+// - ToDo: Method no longer needed - Remove
 // TrackImageRaw method for RGB images
 TrackOutputList Tracker::TrackImageRGBRaw(const unsigned char *rImage, int height, int width)
 {
@@ -160,4 +164,23 @@ double Tracker::GetScoreThreshold() const
 void Tracker::SetScoreThreshold(double threshold)
 {
     pImpl->SetScoreThreshold(threshold);
+}
+
+// Test methods
+std::vector<float> Tracker::TestIntVector()
+{
+    std::vector<float> result = {1.0f, 2.0f, 3.0f};
+    return result;
+}
+
+TrackOutputVector Tracker::TestOutputTrackVector()
+{
+    std::vector<TrackOutput> result;
+    TrackOutput output1 = {{100.0f, 200.0f, 50.0f, 80.0f}, 1, 0.9f};
+    TrackOutput output2 = {{150.0f, 250.0f, 60.0f, 90.0f}, 2, 0.85f};
+    TrackOutput output3 = {{200.0f, 300.0f, 70.0f, 100.0f}, 3, 0.8f};
+    result.push_back(output1);
+    result.push_back(output2);
+    result.push_back(output3);
+    return result;
 }

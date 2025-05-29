@@ -32,6 +32,9 @@ struct SWIFT_SELF_CONTAINED TrackOutputList {
     size_t size;
 };
 
+// Define a type alias TrackOutputVector for a vector of TrackOutput
+using TrackOutputVector = std::vector<TrackOutput>;
+
 class Tracker
 {
 public:
@@ -47,8 +50,9 @@ public:
 
   // Method to track objects in the image
   // This function takes a BRG image as input and returns a vector of TrackOutput
-  FAIRMOT_API std::vector<TrackOutput> TrackImageBGR(const unsigned char *rImage, const int height, const int width);
+  FAIRMOT_API TrackOutputVector TrackImageBGR(const unsigned char *rImage, const int height, const int width);
 
+  // - ToDo: Method no longer needed - Remove
   // Method to track objects in the image
   // This function takes a BRG image as input and returns a TrackOutputList
   SWIFT_RETURNS_INDEPENDENT_VALUE
@@ -56,8 +60,9 @@ public:
 
   // Method to track objects in the image
   // This function takes a RGB image as input and returns a vector of TrackOutput
-  FAIRMOT_API std::vector<TrackOutput> TrackImageRGB(const unsigned char *rImage, const int height, const int width);
+  FAIRMOT_API TrackOutputVector TrackImageRGB(const unsigned char *rImage, const int height, const int width);
 
+  // - ToDo: Method no longer needed - Remove
   // Method to track objects in the image
   // This function takes a RGB image as input and returns a vector of TrackOutput
   SWIFT_RETURNS_INDEPENDENT_VALUE
@@ -68,6 +73,14 @@ public:
 
   // Method to set the score threshold
   FAIRMOT_API void SetScoreThreshold(double threshold);
+
+  // Test methods
+
+  // This function returns a vector of floats for testing purposes
+  FAIRMOT_API std::vector<float> TestIntVector();
+
+  // This function returns a vector of TrackOutput for testing purposes
+  FAIRMOT_API TrackOutputVector TestOutputTrackVector();
 
 private:
     class Impl;                            // Forward declaration of the implementation class
